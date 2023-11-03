@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html><head>
+<meta charset="utf-8" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="HandheldFriendly" content="True" />
+<meta name="viewport" content="width=device-width, height=device-height, target-densitydpi=device-dpi, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, shrink-to-fit=yes" />
+<title>ICT진로교육 - 스마트시티</title>
+<style>
+html, body{width:100%;height:100%;overflow:hidden;padding:0;margin:0;background:url('TemplateData/bg.jpg');background-color: #e7b06f;background-position: center;background-size: cover;}
+/*body{position:fixed;overflow-y:scroll;-webkit-overflow-scrolling:touch}*/
+
+#unity-loading-bar{position:absolute;left:50%;top:50%;transform:translate(-50%, -50%);display:none}
+#unity-progress-bar-empty{width:300px;height:18px;margin-top:10px;margin-left:6.5px;background:url('TemplateData/progress-bar-empty-dark.png') no-repeat center}
+#unity-progress-bar-full{width:0%;height:18px;margin-top:10px;background:url('TemplateData/progress-bar-full-dark.png') no-repeat center}
+#unity-footer{position:relative}
+.unity-mobile #unity-footer{display:none}
+#unity-fullscreen-button{float:right;width:38px;height:38px;background:url('fullscreen-button.png') no-repeat center}
+
+div#unity-container{background:transparent !important;position:absolute}
+div#unity-container canvas{position:absolute}
+div#unity-container canvas[data-pixel-art="true"]{position:absolute;image-rendering:optimizeSpeed;image-rendering:-webkit-crisp-edges;image-rendering:-moz-crisp-edges;image-rendering:-o-crisp-edges;image-rendering:crisp-edges;image-rendering:-webkit-optimize-contrast;image-rendering:optimize-contrast;image-rendering:pixelated;-ms-interpolation-mode:nearest-neighbor}
+
+.rotateIcon{position:absolute;left:50%;top:50%;-webkit-transform:translate(-50%, -50%);transform:translate(-50%, -50%);padding-bottom:40vh;width:35vw}
+#forceToRotateText{color:rgb(166, 166, 166);font-family:Arial;position:absolute;left:50%;top:55%;transform:translate(-50%, -50%);font-size:5vw;width:100vw;text-align:center;display:block;z-index:1}
+#forceToRotate{width:100%;height:100%;position:absolute;display:block}
+</style>
+</head><body>
+
+<div id="forceToRotate" style="display:none">
+	<div id="forceToRotateText">가로 모드를 사용하는 게임입니다.<br/><br/>스마트폰을 가로모드로 눕혀주세요.</div>
+	<img style="display:block;z-index:1" class="rotateIcon" src="TemplateData/rotateIcon.png">
+</div>
+
+<div id="unity-container">
+	<canvas id="unity-canvas"></canvas>
+	<div id="unity-loading-bar">
+		<div id="game-logo">
+			<img src="TemplateData/game-logo.png">
+		</div>
+		<div id="unity-progress-bar-empty">
+			<div id="unity-progress-bar-full"></div>
+		</div>
+	</div>
+	<div id="unity-footer">
+		<div id="unity-fullscreen-button"></div>
+	</div>
+</div>
+
+<script>
+var buildUrl = 'Build';
+var loaderUrl = buildUrl + '/build.loader.js';
+var config = {
+	dataUrl: buildUrl + '/88fed2efb70fa2ac9494fec23701b5ee.data.br',
+	frameworkUrl: buildUrl + '/57af84a0c973b3b24af700121ddde1e8.js.br',
+	codeUrl: buildUrl + '/bfdec86fe01fcbbc1138b8db5e2c5028.wasm.br',
+	streamingAssetsUrl: 'StreamingAssets',
+	companyName: "IAPC",
+	productName: "ICT진로교육 - 스마트시티",
+	productVersion: "0.1",
+	showBanner: function(msg, type){ },
+};
+
+//
+var container = document.querySelector('#unity-container');
+var canvas = document.querySelector('#unity-canvas');
+var loadingBar = document.querySelector('#unity-loading-bar');
+var progressBarFull = document.querySelector('#unity-progress-bar-full');
+var fullscreenButton = document.querySelector('#unity-fullscreen-button');
+var forceToRotate = document.getElementById('forceToRotate');
+
+//
+var iOS = (['iPad Simulator', 'iPhone Simulator', 'iPod Simulator', 'iPad', 'iPhone', 'iPod'].includes(navigator.platform) || (navigator.userAgent.includes('Mac') && 'ontouchend' in document));
+var isMobile = (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || iOS);
+
+if(isMobile){
+	container.className = 'unity-mobile';
+	canvas.className = 'unity-mobile';
+}else{
+	canvas.style.width = '960px';
+	canvas.style.height = '540px';
+}
+loadingBar.style.display = 'block';
+
+//
+var unityInstantiateCalled = false;
+var unityInstantiated = false;
+var applicationInstance;
+
+var script = document.createElement('script');
+script.src = loaderUrl;
+script.onload = () => {
+	createUnityInstance(canvas, config, (progress) => {
+		progressBarFull.style.width = (100 * progress) + '%';
+		
+	}).then((unityInstance) => {
+		unityInstantiated = true;
+		applicationInstance = unityInstance;
+		
+		loadingBar.style.display = 'none';
+		fullscreenButton.onclick = () => unityInstance.SetFullscreen(1);
+		
+		onResize();
+		
+	}).catch((message) => {
+		alert(message);
+	});
+};
+// document.body.appendChild(script);
+function instantiateApplication(){
+	if(unityInstantiateCalled)return;
+	unityInstantiateCalled = true;
+	
+	setTimeout(function(){ document.body.appendChild(script); }, 0);
+}
+
+//
+function onResize(){
+	var container = canvas.parentElement;
+	var w = window.innerWidth;
+	var h = window.innerHeight;
+	var r = 540 / 960;
+	if(w * r > window.innerHeight)w = Math.min(w, Math.ceil(h / r));
+	h = Math.floor(w * r);
+	container.style.width = canvas.style.width = w + 'px';
+	container.style.height = canvas.style.height = h + 'px';
+	container.style.top = Math.floor((window.innerHeight - h) / 2) + 'px';
+	container.style.left = Math.floor((window.innerWidth - w) / 2) + 'px';
+}
+window.addEventListener('resize', onResize);
+onResize();
+
+//
+function onOrientationChange(e){
+	if(window.orientation == 'landscape' || Math.abs(window.orientation % 180) == 90){
+		forceToRotate.style.display = 'none';
+		
+		container.style.display = 'block';
+		if(!unityInstantiated && !applicationInstance){
+			instantiateApplication();
+		}
+		
+	}else{
+		forceToRotate.style.display = 'block';
+		
+		container.style.display = 'none';
+	}
+}
+
+var mql = window.matchMedia('(orientation: landscape)');
+function onMatchMedia(m){
+	if(m.matches){
+		forceToRotate.style.display = 'none';
+		
+		container.style.display = 'block';
+		if(!unityInstantiated && !applicationInstance){
+			instantiateApplication();
+		}
+	}else{
+		forceToRotate.style.display = 'block';
+		
+		container.style.display = 'none';
+	}
+}
+
+if(isMobile){
+	if(window.matchMedia){
+		onMatchMedia(mql);
+		mql.addListener(onMatchMedia);
+	}else{
+		window.addEventListener('orientationchange', onOrientationChange);
+		onOrientationChange();
+	}
+}else{
+	instantiateApplication();
+}
+</script>
+</body></html>
